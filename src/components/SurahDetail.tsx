@@ -18,6 +18,22 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   const [showLao, setShowLao] = useState(true);
   const [showEnglish, setShowEnglish] = useState(true);
 
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() ? (
+            <span key={i} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">{part}</span>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   useEffect(() => {
     const fetchVerses = async () => {
       try {
@@ -138,28 +154,29 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
                 {showArabic && (
                   <div className="flex-1 text-right">
                     <p className="arabic-text text-3xl leading-[2.5] text-app-foreground">
-                      {verse.text_uthmani}
+                      {highlightText(verse.text_uthmani, searchQuery)}
                     </p>
                   </div>
                 )}
               </div>
+
               <div className="pl-14 space-y-4">
                 {showLao && (
                   <p className="text-app-foreground leading-relaxed text-lg font-medium opacity-90">
                     {laoTranslations[surah.id] && laoTranslations[surah.id][verse.verse_number - 1] 
-                      ? laoTranslations[surah.id][verse.verse_number - 1]
+                      ? highlightText(laoTranslations[surah.id][verse.verse_number - 1], searchQuery)
                       : 'Lao translation not available'}
                   </p>
                 )}
                 {showEnglish && (
                   <p className="text-muted text-sm italic opacity-70">
                     {verse.translations && verse.translations[0] 
-                      ? verse.translations[0].text.replace(/<[^>]*>?/gm, '')
+                      ? highlightText(verse.translations[0].text.replace(/<[^>]*>?/gm, ''), searchQuery)
                       : 'English translation not available'}
                   </p>
                 )}
               </div>
-              <div className="mt-12 h-px bg-app-border w-full" />
+              <div className="mt-12 border-b border-app-border w-full opacity-50" />
             </motion.div>
           ))
         ) : (

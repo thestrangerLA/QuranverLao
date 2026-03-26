@@ -7,14 +7,20 @@ import { cn } from '../lib/utils';
 
 interface SurahListProps {
   onSelectSurah: (surah: Surah) => void;
+  surahs?: Surah[] | null;
 }
 
-export const SurahList: React.FC<SurahListProps> = ({ onSelectSurah }) => {
-  const [surahs, setSurahs] = useState<Surah[]>([]);
+export const SurahList: React.FC<SurahListProps> = ({ onSelectSurah, surahs: initialSurahs }) => {
+  const [surahs, setSurahs] = useState<Surah[]>(initialSurahs || []);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialSurahs || initialSurahs.length === 0);
 
   useEffect(() => {
+    if (initialSurahs && initialSurahs.length > 0) {
+      setSurahs(initialSurahs);
+      setLoading(false);
+      return;
+    }
     const fetchSurahs = async () => {
       try {
         const data = await getSurahs();
@@ -25,8 +31,12 @@ export const SurahList: React.FC<SurahListProps> = ({ onSelectSurah }) => {
         setLoading(false);
       }
     };
-    fetchSurahs();
-  }, []);
+    
+    // Only fetch if we don't have surahs and we're not already loading
+    if (!initialSurahs || initialSurahs.length === 0) {
+      fetchSurahs();
+    }
+  }, [initialSurahs]);
 
   const filteredSurahs = surahs.filter(
     (s) =>

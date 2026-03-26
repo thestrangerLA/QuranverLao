@@ -9,6 +9,62 @@ import { cn } from './lib/utils';
 export default function App() {
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [activeTab, setActiveTab] = useState('home');
+  const [surahs, setSurahs] = useState<Surah[] | null>(null);
+
+  useEffect(() => {
+    const fetchSurahs = async () => {
+      try {
+        const { getSurahs } = await import('./services/quranApi');
+        const data = await getSurahs();
+        setSurahs(data);
+        
+        // Handle initial load from hash
+        const hash = window.location.hash;
+        if (hash.startsWith('#surah-')) {
+          const id = parseInt(hash.replace('#surah-', ''));
+          const surah = data.find(s => s.id === id);
+          if (surah) {
+            setSelectedSurah(surah);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching surahs for history:', error);
+      }
+    };
+    fetchSurahs();
+  }, []); // Only fetch once on mount
+
+  useEffect(() => {
+    if (!surahs) return;
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state?.surahId) {
+        const surah = surahs.find(s => s.id === event.state.surahId);
+        if (surah) {
+          setSelectedSurah(surah);
+        }
+      } else {
+        setSelectedSurah(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [surahs]); // Re-run when surahs are loaded to handle popstate
+
+  const handleSelectSurah = (surah: Surah) => {
+    setSelectedSurah(surah);
+    window.history.pushState({ surahId: surah.id }, '', `#surah-${surah.id}`);
+  };
+
+  const handleBack = () => {
+    if (window.history.state?.surahId) {
+      window.history.back();
+    } else {
+      setSelectedSurah(null);
+    }
+  };
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -62,7 +118,7 @@ export default function App() {
                 </button>
               </div>
 
-              <SurahList onSelectSurah={setSelectedSurah} />
+              <SurahList onSelectSurah={handleSelectSurah} surahs={surahs} />
             </motion.div>
           ) : (
             <motion.div
@@ -73,7 +129,7 @@ export default function App() {
             >
               <SurahDetail 
                 surah={selectedSurah} 
-                onBack={() => setSelectedSurah(null)} 
+                onBack={handleBack} 
               />
             </motion.div>
           )}
