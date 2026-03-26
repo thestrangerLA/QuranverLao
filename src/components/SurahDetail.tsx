@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
-import { getSurahVerses } from '../services/quranApi';
-import { Surah, Verse } from '../types';
+import { getSurahVerses, getTafsir } from '../services/quranApi';
+import { Surah, Verse, Tafsir } from '../types';
 import { laoTranslations } from '../data/laoTranslations';
+import { BookOpen, X, Loader2 } from 'lucide-react';
 
 interface SurahDetailProps {
   surah: Surah;
@@ -18,6 +19,9 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   const [showLao, setShowLao] = useState(true);
   const [showEnglish, setShowEnglish] = useState(false);
   const [showThai, setShowThai] = useState(false);
+  const [activeTafsirVerse, setActiveTafsirVerse] = useState<{ verseKey: string; verseNumber: number } | null>(null);
+  const [tafsirData, setTafsirData] = useState<Tafsir | null>(null);
+  const [tafsirLoading, setTafsirLoading] = useState(false);
 
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
@@ -50,6 +54,28 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
     fetchVerses();
     window.scrollTo(0, 0);
   }, [surah.id]);
+
+  useEffect(() => {
+    if (!activeTafsirVerse) {
+      setTafsirData(null);
+      return;
+    }
+
+    const fetchTafsir = async () => {
+      setTafsirLoading(true);
+      try {
+        // Using Tafsir Ibn Kathir (English) - ID 169
+        const data = await getTafsir(169, activeTafsirVerse.verseKey);
+        setTafsirData(data);
+      } catch (error) {
+        console.error('Error fetching tafsir:', error);
+      } finally {
+        setTafsirLoading(false);
+      }
+    };
+
+    fetchTafsir();
+  }, [activeTafsirVerse]);
 
   const filteredVerses = verses.filter(verse => {
     const query = searchQuery.toLowerCase();
@@ -187,6 +213,17 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
                   </p>
                 )}
               </div>
+              
+              <div className="pl-14 mt-4 flex gap-2">
+                <button
+                  onClick={() => setActiveTafsirVerse({ verseKey: verse.verse_key, verseNumber: verse.verse_number })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Tafsir (Explanation)
+                </button>
+              </div>
+
               <div className="mt-12 border-b border-app-border w-full opacity-50" />
             </motion.div>
           ))
@@ -196,6 +233,61 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {activeTafsirVerse && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-app-card w-full max-w-lg max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-app-border"
+            >
+              <div className="p-6 border-b border-app-border flex items-center justify-between bg-emerald-600 text-white">
+                <div>
+                  <h3 className="font-bold text-lg">Tafsir Ibn Kathir</h3>
+                  <p className="text-xs text-emerald-100 opacity-80">Verse {activeTafsirVerse.verseNumber}</p>
+                </div>
+                <button 
+                  onClick={() => setActiveTafsirVerse(null)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                {tafsirLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                    <p className="text-sm text-muted animate-pulse">Fetching explanation...</p>
+                  </div>
+                ) : tafsirData ? (
+                  <div className="prose prose-emerald dark:prose-invert max-w-none">
+                    <div 
+                      className="text-app-foreground leading-relaxed text-sm"
+                      dangerouslySetInnerHTML={{ __html: tafsirData.text }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted">
+                    <p>Could not load tafsir at this time.</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 border-t border-app-border bg-app-background/50 text-center">
+                <button
+                  onClick={() => setActiveTafsirVerse(null)}
+                  className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

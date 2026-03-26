@@ -6,21 +6,65 @@ const BASE_URL = 'https://api.quran.com/api/v4';
 // If not found, we'll use Thai as it's linguistically close and often used by Lao speakers.
 
 export const getSurahs = async () => {
-  const response = await fetch(`${BASE_URL}/chapters?language=en`);
-  const data = await response.json();
-  return data.chapters;
+  try {
+    const response = await fetch(`${BASE_URL}/chapters?language=en`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.chapters;
+  } catch (error) {
+    console.error('Error in getSurahs:', error);
+    throw error;
+  }
 };
 
 export const getSurahVerses = async (surahId: number, translationIds: string | number = 20) => {
-  const response = await fetch(
-    `${BASE_URL}/verses/by_chapter/${surahId}?language=en&words=false&translations=${translationIds}&fields=text_uthmani&per_page=500`
-  );
-  const data = await response.json();
-  return data.verses;
+  try {
+    const response = await fetch(
+      `${BASE_URL}/verses/by_chapter/${surahId}?language=en&words=false&translations=${translationIds}&fields=text_uthmani&per_page=500`
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.verses;
+  } catch (error) {
+    console.error('Error in getSurahVerses:', error);
+    throw error;
+  }
 };
 
 export const getTranslations = async () => {
   const response = await fetch(`${BASE_URL}/resources/translations`);
   const data = await response.json();
   return data.translations;
+};
+
+export const getTafsirList = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/resources/tafsirs`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.tafsirs;
+  } catch (error) {
+    console.error('Error in getTafsirList:', error);
+    throw error;
+  }
+};
+
+export const getTafsir = async (tafsirId: number, verseKey: string) => {
+  try {
+    const response = await fetch(`${BASE_URL}/quran/tafsirs/${tafsirId}?verse_key=${verseKey}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.tafsirs?.[0] || null;
+  } catch (error) {
+    console.error('Error in getTafsir:', error);
+    throw error;
+  }
 };
