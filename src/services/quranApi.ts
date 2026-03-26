@@ -11,9 +11,9 @@ export const getSurahs = async () => {
   return data.chapters;
 };
 
-export const getSurahVerses = async (surahId: number, translationId: number = 20) => {
+export const getSurahVerses = async (surahId: number, translationIds: string | number = 20) => {
   const response = await fetch(
-    `${BASE_URL}/verses/by_chapter/${surahId}?language=en&words=false&translations=${translationId}&fields=text_uthmani&per_page=500`
+    `${BASE_URL}/verses/by_chapter/${surahId}?language=en&words=false&translations=${translationIds}&fields=text_uthmani&per_page=500`
   );
   const data = await response.json();
   return data.verses;

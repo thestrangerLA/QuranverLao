@@ -14,9 +14,10 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   const [verses, setVerses] = useState<Verse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showArabic, setShowArabic] = useState(true);
+  const [showArabic, setShowArabic] = useState(false);
   const [showLao, setShowLao] = useState(true);
-  const [showEnglish, setShowEnglish] = useState(true);
+  const [showEnglish, setShowEnglish] = useState(false);
+  const [showThai, setShowThai] = useState(false);
 
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
@@ -37,8 +38,8 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   useEffect(() => {
     const fetchVerses = async () => {
       try {
-        // Using English translation (ID 20 - Saheeh International)
-        const data = await getSurahVerses(surah.id, 20);
+        // Using English (ID 20) and Thai (ID 51) translations
+        const data = await getSurahVerses(surah.id, '20,51');
         setVerses(data);
       } catch (error) {
         console.error('Error fetching verses:', error);
@@ -53,13 +54,15 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   const filteredVerses = verses.filter(verse => {
     const query = searchQuery.toLowerCase();
     const laoText = laoTranslations[surah.id]?.[verse.verse_number - 1] || '';
-    const engText = verse.translations?.[0]?.text.replace(/<[^>]*>?/gm, '') || '';
+    const engText = verse.translations?.find(t => t.resource_id === 20)?.text.replace(/<[^>]*>?/gm, '') || '';
+    const thaiText = verse.translations?.find(t => t.resource_id === 51)?.text.replace(/<[^>]*>?/gm, '') || '';
     
     return (
       verse.verse_number.toString().includes(query) ||
       verse.text_uthmani.includes(query) ||
       laoText.toLowerCase().includes(query) ||
-      engText.toLowerCase().includes(query)
+      engText.toLowerCase().includes(query) ||
+      thaiText.toLowerCase().includes(query)
     );
   });
 
@@ -108,6 +111,7 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
             <ToggleButton active={showArabic} onClick={() => setShowArabic(!showArabic)} label="Arabic" />
             <ToggleButton active={showLao} onClick={() => setShowLao(!showLao)} label="Lao" />
             <ToggleButton active={showEnglish} onClick={() => setShowEnglish(!showEnglish)} label="English" />
+            <ToggleButton active={showThai} onClick={() => setShowThai(!showThai)} label="Thai" />
           </div>
         </div>
       </div>
@@ -170,9 +174,16 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
                 )}
                 {showEnglish && (
                   <p className="text-muted text-sm italic opacity-70">
-                    {verse.translations && verse.translations[0] 
-                      ? highlightText(verse.translations[0].text.replace(/<[^>]*>?/gm, ''), searchQuery)
+                    {verse.translations?.find(t => t.resource_id === 20)
+                      ? highlightText(verse.translations.find(t => t.resource_id === 20)!.text.replace(/<[^>]*>?/gm, ''), searchQuery)
                       : 'English translation not available'}
+                  </p>
+                )}
+                {showThai && (
+                  <p className="text-muted text-sm italic opacity-70">
+                    {verse.translations?.find(t => t.resource_id === 51)
+                      ? highlightText(verse.translations.find(t => t.resource_id === 51)!.text.replace(/<[^>]*>?/gm, ''), searchQuery)
+                      : 'Thai translation not available'}
                   </p>
                 )}
               </div>
