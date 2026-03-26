@@ -13,6 +13,10 @@ interface SurahDetailProps {
 export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
   const [verses, setVerses] = useState<Verse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showArabic, setShowArabic] = useState(true);
+  const [showLao, setShowLao] = useState(true);
+  const [showEnglish, setShowEnglish] = useState(true);
 
   useEffect(() => {
     const fetchVerses = async () => {
@@ -30,6 +34,19 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
     window.scrollTo(0, 0);
   }, [surah.id]);
 
+  const filteredVerses = verses.filter(verse => {
+    const query = searchQuery.toLowerCase();
+    const laoText = laoTranslations[surah.id]?.[verse.verse_number - 1] || '';
+    const engText = verse.translations?.[0]?.text.replace(/<[^>]*>?/gm, '') || '';
+    
+    return (
+      verse.verse_number.toString().includes(query) ||
+      verse.text_uthmani.includes(query) ||
+      laoText.toLowerCase().includes(query) ||
+      engText.toLowerCase().includes(query)
+    );
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -40,20 +57,43 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="sticky top-0 z-10 bg-app-background/80 backdrop-blur-md py-4 -mx-4 px-4 flex items-center justify-between border-b border-app-border">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors text-emerald-600"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="text-center">
-          <h2 className="font-bold">{surah.name_simple}</h2>
-          <p className="text-[10px] text-muted uppercase tracking-widest font-bold">
-            {surah.revelation_place === 'makkah' ? 'MAKKAH' : 'MADINAH'} • {surah.verses_count} VERSES
-          </p>
+      <div className="sticky top-0 z-10 bg-app-background/80 backdrop-blur-md py-4 -mx-4 px-4 border-b border-app-border">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors text-emerald-600"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div className="text-center">
+            <h2 className="font-bold">{surah.name_simple}</h2>
+            <p className="text-[10px] text-muted uppercase tracking-widest font-bold">
+              {surah.revelation_place === 'makkah' ? 'MAKKAH' : 'MADINAH'} • {surah.verses_count} VERSES
+            </p>
+          </div>
+          <div className="w-10" />
         </div>
-        <div className="w-10" /> {/* Spacer */}
+
+        <div className="space-y-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search verses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-app-card border border-app-border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <ToggleButton active={showArabic} onClick={() => setShowArabic(!showArabic)} label="Arabic" />
+            <ToggleButton active={showLao} onClick={() => setShowLao(!showLao)} label="Lao" />
+            <ToggleButton active={showEnglish} onClick={() => setShowEnglish(!showEnglish)} label="English" />
+          </div>
+        </div>
       </div>
 
       <motion.div
@@ -82,44 +122,65 @@ export const SurahDetail: React.FC<SurahDetailProps> = ({ surah, onBack }) => {
       )}
 
       <div className="space-y-12">
-        {verses.map((verse) => (
-          <motion.div
-            key={verse.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="group"
-          >
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full border border-app-border flex items-center justify-center text-xs font-bold text-emerald-600 bg-app-card">
-                {verse.verse_number}
+        {filteredVerses.length > 0 ? (
+          filteredVerses.map((verse) => (
+            <motion.div
+              key={verse.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="group"
+            >
+              <div className="flex items-start gap-4 mb-6">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full border border-app-border flex items-center justify-center text-xs font-bold text-emerald-600 bg-app-card">
+                  {verse.verse_number}
+                </div>
+                {showArabic && (
+                  <div className="flex-1 text-right">
+                    <p className="arabic-text text-3xl leading-[2.5] text-app-foreground">
+                      {verse.text_uthmani}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="flex-1 text-right">
-                <p className="arabic-text text-3xl leading-[2.5] text-app-foreground">
-                  {verse.text_uthmani}
-                </p>
-              </div>
-            </div>
-            <div className="pl-14 space-y-3">
-              <p className="text-app-foreground leading-relaxed text-lg font-medium opacity-90">
-                {laoTranslations[surah.id] && laoTranslations[surah.id][verse.verse_number - 1] 
-                  ? laoTranslations[surah.id][verse.verse_number - 1]
-                  : (verse.translations && verse.translations[0] 
+              <div className="pl-14 space-y-4">
+                {showLao && (
+                  <p className="text-app-foreground leading-relaxed text-lg font-medium opacity-90">
+                    {laoTranslations[surah.id] && laoTranslations[surah.id][verse.verse_number - 1] 
+                      ? laoTranslations[surah.id][verse.verse_number - 1]
+                      : 'Lao translation not available'}
+                  </p>
+                )}
+                {showEnglish && (
+                  <p className="text-muted text-sm italic opacity-70">
+                    {verse.translations && verse.translations[0] 
                       ? verse.translations[0].text.replace(/<[^>]*>?/gm, '')
-                      : 'Translation not available')}
-              </p>
-              {laoTranslations[surah.id] && (
-                <p className="text-muted text-sm italic opacity-70">
-                  {verse.translations && verse.translations[0] 
-                    ? verse.translations[0].text.replace(/<[^>]*>?/gm, '')
-                    : ''}
-                </p>
-              )}
-            </div>
-            <div className="mt-12 h-px bg-app-border w-full" />
-          </motion.div>
-        ))}
+                      : 'English translation not available'}
+                  </p>
+                )}
+              </div>
+              <div className="mt-12 h-px bg-app-border w-full" />
+            </motion.div>
+          ))
+        ) : (
+          <div className="text-center py-20 text-muted">
+            <p>No verses found matching your search.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+const ToggleButton: React.FC<{ active: boolean; onClick: () => void; label: string }> = ({ active, onClick, label }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+      active 
+        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none' 
+        : 'bg-app-card text-muted border border-app-border hover:border-emerald-500/50'
+    }`}
+  >
+    {label}
+  </button>
+);
