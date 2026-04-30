@@ -10,6 +10,7 @@ export default function App() {
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [activeTab, setActiveTab] = useState('home');
   const [surahs, setSurahs] = useState<Surah[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSurahs = async () => {
@@ -27,8 +28,9 @@ export default function App() {
             setSelectedSurah(surah);
           }
         }
-      } catch (error) {
-        console.error('Error fetching surahs for history:', error);
+      } catch (err) {
+        console.error('Error fetching surahs for history:', err);
+        setError('ບໍ່ສາມາດໂຫລດຂໍ້ມູນໄດ້. ກະລຸນາກວດສອບການເຊື່ອມຕໍ່ອິນເຕີເນັດຂອງທ່ານ.');
       }
     };
     fetchSurahs();
@@ -88,8 +90,21 @@ export default function App() {
   return (
     <div className="min-h-screen bg-app-background text-app-foreground selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300">
       <div className="max-w-md mx-auto px-4 pt-8 pb-32">
-        <AnimatePresence mode="wait">
-          {!selectedSurah ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+            <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100">
+              <p className="font-medium">{error}</p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-700 transition-all active:scale-95"
+            >
+              ໂຫລດຄືນໃໝ່
+            </button>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {!selectedSurah ? (
             <motion.div
               key="home"
               initial={{ opacity: 0, x: -20 }}
@@ -134,6 +149,7 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
       </div>
 
       {/* Bottom Navigation */}
