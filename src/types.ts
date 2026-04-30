@@ -31,17 +31,3 @@ export interface TranslationResource {
   author_name: string;
   language_name: string;
 }
-
-export interface Tafsir {
-  id: number;
-  text: string;
-  resource_id: number;
-  resource_name: string;
-}
-
-export interface TafsirResource {
-  id: number;
-  name: string;
-  author_name: string;
-  language_name: string;
-}
